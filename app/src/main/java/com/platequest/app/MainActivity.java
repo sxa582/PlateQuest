@@ -356,7 +356,7 @@ public class MainActivity extends Activity {
     private void recordPlate(EditText input) {
         String clean = PlateTracker.normalize(input.getText().toString());
         if (!PlateTracker.isValid(clean)) {
-            input.setError("Enter exactly seven letters or numbers");
+            input.setError("Enter three letters/numbers followed by four numbers");
             input.requestFocus();
             return;
         }
@@ -433,7 +433,8 @@ public class MainActivity extends Activity {
 
     private View positionTile(int index, Set<String> discovered) {
         int count = discovered.size();
-        int percent = Math.round(count * 100f / PlateTracker.CHARACTERS.length());
+        int total = PlateTracker.totalSlotsForPosition(index);
+        int percent = Math.round(count * 100f / total);
 
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
@@ -448,10 +449,10 @@ public class MainActivity extends Activity {
         pos.setLetterSpacing(0.05f);
         tile.addView(pos);
         tile.addView(text(percent + "%", 20, INK, Typeface.BOLD));
-        TextView found = text(count + " / 36", 10, MUTED, Typeface.BOLD);
+        TextView found = text(count + " / " + total, 10, MUTED, Typeface.BOLD);
         tile.addView(found);
 
-        ProgressBar bar = horizontalProgress(36, count, index % 2 == 0 ? INDIGO : SKY, BORDER);
+        ProgressBar bar = horizontalProgress(total, count, index % 2 == 0 ? INDIGO : SKY, BORDER);
         LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(6));
         barLp.setMargins(0, dp(7), 0, 0);
@@ -470,6 +471,7 @@ public class MainActivity extends Activity {
         Set<String> discovered = all.get(focus);
         List<String> missingLetters = missingCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ", discovered);
         List<String> missingNumbers = missingCharacters("0123456789", discovered);
+        int total = PlateTracker.totalSlotsForPosition(focus);
 
         LinearLayout card = card();
         LinearLayout heading = new LinearLayout(this);
@@ -483,7 +485,7 @@ public class MainActivity extends Activity {
         heading.addView(titles, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView badge = text((36 - discovered.size()) + " LEFT", 10, Color.rgb(132, 93, 25),
+        TextView badge = text((total - discovered.size()) + " LEFT", 10, Color.rgb(132, 93, 25),
                 Typeface.BOLD);
         badge.setGravity(Gravity.CENTER);
         badge.setBackground(roundRect(SOFT_GOLD, 14, Color.rgb(242, 216, 151), 1));
@@ -491,8 +493,10 @@ public class MainActivity extends Activity {
         card.addView(heading);
         card.addView(space(13));
 
-        card.addView(targetRow("LETTERS", missingLetters, SOFT_PURPLE, INDIGO));
-        card.addView(space(8));
+        if (allowsLetters(focus)) {
+            card.addView(targetRow("LETTERS", missingLetters, SOFT_PURPLE, INDIGO));
+            card.addView(space(8));
+        }
         card.addView(targetRow("NUMBERS", missingNumbers, SOFT_BLUE, Color.rgb(33, 133, 194)));
 
         TextView open = smallLink("OPEN FULL MISSING LIST  →");
@@ -531,7 +535,7 @@ public class MainActivity extends Activity {
         int bestCount = -1;
         for (int i = 0; i < all.size(); i++) {
             int count = all.get(i).size();
-            if (count < 36 && count > bestCount) {
+            if (count < PlateTracker.totalSlotsForPosition(i) && count > bestCount) {
                 bestCount = count;
                 bestIndex = i;
             }
@@ -639,7 +643,8 @@ public class MainActivity extends Activity {
 
     private View buildProgressHero() {
         Set<String> discovered = loadPosition(selectedPosition);
-        int percent = Math.round(discovered.size() * 100f / 36f);
+        int total = PlateTracker.totalSlotsForPosition(selectedPosition);
+        int percent = Math.round(discovered.size() * 100f / total);
 
         LinearLayout hero = new LinearLayout(this);
         hero.setGravity(Gravity.CENTER_VERTICAL);
@@ -662,9 +667,9 @@ public class MainActivity extends Activity {
                 Color.rgb(194, 209, 241), Typeface.BOLD);
         label.setLetterSpacing(0.08f);
         middle.addView(label);
-        middle.addView(text(discovered.size() + " of 36 found", 22,
+        middle.addView(text(discovered.size() + " of " + total + " found", 22,
                 Color.WHITE, Typeface.BOLD));
-        ProgressBar bar = horizontalProgress(36, discovered.size(), SKY,
+        ProgressBar bar = horizontalProgress(total, discovered.size(), SKY,
                 Color.argb(40, 255, 255, 255));
         LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(8));
@@ -710,6 +715,7 @@ public class MainActivity extends Activity {
 
     private View buildCharacterGridCard() {
         Set<String> discovered = loadPosition(selectedPosition);
+        int total = PlateTracker.totalSlotsForPosition(selectedPosition);
         LinearLayout card = card();
 
         LinearLayout heading = new LinearLayout(this);
@@ -722,20 +728,28 @@ public class MainActivity extends Activity {
         heading.addView(stack, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView remaining = text((36 - discovered.size()) + " LEFT", 10,
-                discovered.size() == 36 ? MINT_DARK : INDIGO, Typeface.BOLD);
+        TextView remaining = text((total - discovered.size()) + " LEFT", 10,
+                discovered.size() == total ? MINT_DARK : INDIGO, Typeface.BOLD);
         remaining.setGravity(Gravity.CENTER);
-        remaining.setBackground(roundRect(discovered.size() == 36 ? SOFT_MINT : SOFT_PURPLE,
-                14, discovered.size() == 36 ? Color.rgb(169, 230, 205) : Color.rgb(214, 208, 255), 1));
+        remaining.setBackground(roundRect(discovered.size() == total ? SOFT_MINT : SOFT_PURPLE,
+                14, discovered.size() == total ? Color.rgb(169, 230, 205) : Color.rgb(214, 208, 255), 1));
         heading.addView(remaining, new LinearLayout.LayoutParams(dp(68), dp(34)));
         card.addView(heading);
         card.addView(space(14));
 
-        String chars = PlateTracker.CHARACTERS;
-        for (int rowIndex = 0; rowIndex < 6; rowIndex++) {
+        String chars = PlateTracker.charactersForPosition(selectedPosition);
+        int columns = 6;
+        int rows = (int) Math.ceil(chars.length() / (float) columns);
+        for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
             LinearLayout row = new LinearLayout(this);
-            for (int col = 0; col < 6; col++) {
-                int charIndex = rowIndex * 6 + col;
+            for (int col = 0; col < columns; col++) {
+                int charIndex = rowIndex * columns + col;
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(48), 1f);
+                if (col > 0) lp.setMargins(dp(6), 0, 0, 0);
+                if (charIndex >= chars.length()) {
+                    row.addView(new Space(this), lp);
+                    continue;
+                }
                 String character = String.valueOf(chars.charAt(charIndex));
                 boolean found = discovered.contains(character);
                 TextView chip = text(found ? character + " ✓" : character, found ? 12 : 15,
@@ -743,18 +757,18 @@ public class MainActivity extends Activity {
                 chip.setGravity(Gravity.CENTER);
                 chip.setBackground(roundRect(found ? SOFT_MINT : BG, 12,
                         found ? Color.rgb(154, 225, 194) : BORDER, 1));
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(48), 1f);
-                if (col > 0) lp.setMargins(dp(6), 0, 0, 0);
                 row.addView(chip, lp);
             }
             card.addView(row);
-            if (rowIndex < 5) card.addView(space(7));
+            if (rowIndex < rows - 1) card.addView(space(7));
         }
 
         card.addView(space(18));
-        card.addView(missingGroup("MISSING LETTERS",
-                missingCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ", discovered), SOFT_PURPLE, INDIGO));
-        card.addView(space(10));
+        if (allowsLetters(selectedPosition)) {
+            card.addView(missingGroup("MISSING LETTERS",
+                    missingCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ", discovered), SOFT_PURPLE, INDIGO));
+            card.addView(space(10));
+        }
         card.addView(missingGroup("MISSING NUMBERS",
                 missingCharacters("0123456789", discovered), SOFT_BLUE, Color.rgb(33, 133, 194)));
         return card;
@@ -794,6 +808,10 @@ public class MainActivity extends Activity {
         return missing;
     }
 
+    private boolean allowsLetters(int positionIndex) {
+        return PlateTracker.charactersForPosition(positionIndex).indexOf('A') >= 0;
+    }
+
     private View buildAllPositionSummary() {
         List<Set<String>> all = loadAllPositions();
         LinearLayout card = card();
@@ -807,7 +825,8 @@ public class MainActivity extends Activity {
 
         for (int i = 0; i < PlateTracker.POSITION_COUNT; i++) {
             int count = all.get(i).size();
-            int percent = Math.round(count * 100f / 36f);
+            int total = PlateTracker.totalSlotsForPosition(i);
+            int percent = Math.round(count * 100f / total);
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(dp(10), dp(10), dp(10), dp(10));
@@ -826,7 +845,7 @@ public class MainActivity extends Activity {
             barStack.setPadding(dp(11), 0, dp(10), 0);
             barStack.addView(text("Position " + (i + 1) + "  •  " + count + " found",
                     12, TEXT, Typeface.BOLD));
-            ProgressBar bar = horizontalProgress(36, count,
+            ProgressBar bar = horizontalProgress(total, count,
                     i == selectedPosition ? INDIGO : MINT, BORDER);
             LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, dp(7));
@@ -950,7 +969,15 @@ public class MainActivity extends Activity {
 
     private Set<String> loadPosition(int index) {
         Set<String> stored = prefs.getStringSet(positionKey(index), new HashSet<>());
-        return stored == null ? new HashSet<>() : new HashSet<>(stored);
+        Set<String> result = new HashSet<>();
+        if (stored == null) return result;
+        String allowed = PlateTracker.charactersForPosition(index);
+        for (String character : stored) {
+            if (character != null && character.length() == 1 && allowed.contains(character)) {
+                result.add(character);
+            }
+        }
+        return result;
     }
 
     private List<Set<String>> loadAllPositions() {

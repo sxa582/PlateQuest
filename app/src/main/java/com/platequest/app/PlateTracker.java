@@ -10,7 +10,8 @@ import java.util.Set;
 public final class PlateTracker {
     public static final int POSITION_COUNT = 7;
     public static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    public static final int TOTAL_SLOTS = POSITION_COUNT * CHARACTERS.length();
+    public static final String DIGITS = "0123456789";
+    public static final int TOTAL_SLOTS = (3 * CHARACTERS.length()) + (4 * DIGITS.length());
 
     private PlateTracker() {}
 
@@ -34,7 +35,16 @@ public final class PlateTracker {
     }
 
     public static boolean isValid(String raw) {
-        return normalize(raw).length() == POSITION_COUNT;
+        String plate = normalize(raw);
+        if (plate.length() != POSITION_COUNT) return false;
+        for (int i = 0; i < POSITION_COUNT; i++) {
+            if (charactersForPosition(i).indexOf(plate.charAt(i)) < 0) return false;
+        }
+        return true;
+    }
+
+    public static String charactersForPosition(int positionIndex) {
+        return positionIndex >= 3 ? DIGITS : CHARACTERS;
     }
 
     public static List<Discovery> findNewDiscoveries(
@@ -42,7 +52,7 @@ public final class PlateTracker {
             List<Set<String>> discoveredByPosition
     ) {
         String plate = normalize(rawPlate);
-        if (plate.length() != POSITION_COUNT || discoveredByPosition.size() != POSITION_COUNT) {
+        if (!isValid(plate) || discoveredByPosition.size() != POSITION_COUNT) {
             return Collections.emptyList();
         }
 
@@ -64,6 +74,10 @@ public final class PlateTracker {
 
     public static int percentComplete(int totalFound) {
         return Math.round(totalFound * 100f / TOTAL_SLOTS);
+    }
+
+    public static int totalSlotsForPosition(int positionIndex) {
+        return charactersForPosition(positionIndex).length();
     }
 
     public static final class Discovery {
