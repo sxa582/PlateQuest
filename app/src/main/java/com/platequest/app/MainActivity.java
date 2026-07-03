@@ -356,7 +356,7 @@ public class MainActivity extends Activity {
     private void recordPlate(EditText input) {
         String clean = PlateTracker.normalize(input.getText().toString());
         if (!PlateTracker.isValid(clean)) {
-            input.setError("Enter three letters/numbers followed by four numbers");
+            input.setError("Enter three letters followed by four numbers");
             input.requestFocus();
             return;
         }
@@ -497,7 +497,9 @@ public class MainActivity extends Activity {
             card.addView(targetRow("LETTERS", missingLetters, SOFT_PURPLE, INDIGO));
             card.addView(space(8));
         }
-        card.addView(targetRow("NUMBERS", missingNumbers, SOFT_BLUE, Color.rgb(33, 133, 194)));
+        if (allowsDigits(focus)) {
+            card.addView(targetRow("NUMBERS", missingNumbers, SOFT_BLUE, Color.rgb(33, 133, 194)));
+        }
 
         TextView open = smallLink("OPEN FULL MISSING LIST  →");
         open.setGravity(Gravity.CENTER);
@@ -769,8 +771,10 @@ public class MainActivity extends Activity {
                     missingCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ", discovered), SOFT_PURPLE, INDIGO));
             card.addView(space(10));
         }
-        card.addView(missingGroup("MISSING NUMBERS",
-                missingCharacters("0123456789", discovered), SOFT_BLUE, Color.rgb(33, 133, 194)));
+        if (allowsDigits(selectedPosition)) {
+            card.addView(missingGroup("MISSING NUMBERS",
+                    missingCharacters("0123456789", discovered), SOFT_BLUE, Color.rgb(33, 133, 194)));
+        }
         return card;
     }
 
@@ -810,6 +814,10 @@ public class MainActivity extends Activity {
 
     private boolean allowsLetters(int positionIndex) {
         return PlateTracker.charactersForPosition(positionIndex).indexOf('A') >= 0;
+    }
+
+    private boolean allowsDigits(int positionIndex) {
+        return PlateTracker.charactersForPosition(positionIndex).indexOf('0') >= 0;
     }
 
     private View buildAllPositionSummary() {

@@ -9,9 +9,9 @@ import java.util.Set;
 /** Pure Java game logic, separated from Android UI for easy testing. */
 public final class PlateTracker {
     public static final int POSITION_COUNT = 7;
-    public static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    public static final String LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     public static final String DIGITS = "0123456789";
-    public static final int TOTAL_SLOTS = (3 * CHARACTERS.length()) + (4 * DIGITS.length());
+    public static final int TOTAL_SLOTS = (3 * LETTERS.length()) + (4 * DIGITS.length());
 
     private PlateTracker() {}
 
@@ -44,7 +44,7 @@ public final class PlateTracker {
     }
 
     public static String charactersForPosition(int positionIndex) {
-        return positionIndex >= 3 ? DIGITS : CHARACTERS;
+        return positionIndex >= 3 ? DIGITS : LETTERS;
     }
 
     public static List<Discovery> findNewDiscoveries(

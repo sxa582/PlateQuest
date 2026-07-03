@@ -12,13 +12,13 @@ Example: entering `TGL-7815` records:
 - `1` in position 6
 - `5` in position 7
 
-The first three positions maintain their own A-Z and 0-9 collections. The last four positions track 0-9 only.
+The first three positions maintain their own A-Z collections. The last four positions track 0-9 only.
 
 ## Included features
 
 - Seven-character manual plate entry
 - Automatic `XXX-XXXX` display formatting
-- A-Z and 0-9 tracking for the first three positions
+- A-Z tracking for the first three positions
 - 0-9 tracking for the last four positions
 - Overall and per-position completion statistics
 - Recent plate history
